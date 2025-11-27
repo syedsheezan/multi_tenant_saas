@@ -1,0 +1,19 @@
+Django>=5.0
+djangorestframework>=3.15.0
+djangorestframework-simplejwt>=5.3.1
+django-cors-headers>=4.3.1
+python-dotenv>=1.0.1
+
+
+mysqlclient>=2.2.4
+
+django-tenants>=3.6.1
+
+# Additional useful packages
+Pillow>=10.2.0
+requests>=2.32.3
+django-filter
+drf-yasg            # for swagger (optional)
+celery[redis]
+redis
+django-storages[boto3] 
