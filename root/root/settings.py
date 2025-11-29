@@ -47,10 +47,11 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
-    'apps.users',
     "rest_framework_simplejwt.token_blacklist",
     "channels",
     'drf_yasg',
+    'apps.tenants',
+    'apps.users',
 ]
 
 MIDDLEWARE = [
@@ -62,7 +63,7 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
-ROOT_URLCONF = 'fees_management.urls'
+ROOT_URLCONF = 'root.urls'
 
 TEMPLATES = [
     {
@@ -79,11 +80,11 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'fees_management.wsgi.application'
-ASGI_APPLICATION = 'fees_management.asgi.application'
+WSGI_APPLICATION = 'root.wsgi.application'
+ASGI_APPLICATION = 'root.asgi.application'
 
 
-APPEND_SLASH=False,
+APPEND_SLASH=False
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 from dotenv import load_dotenv
@@ -94,21 +95,44 @@ load_dotenv()  # load values from .env
 IS_DOCKER = os.getenv("DJANGO_ENV") == "docker"
 
 
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.mysql",
-        "NAME": os.getenv("MYSQL_DATABASE", "saas_db"),
-        "USER": os.getenv("MYSQL_USER", "root"),
-        "PASSWORD": os.getenv("MYSQL_PASSWORD", ""),
-        "HOST": "db" if IS_DOCKER else "127.0.0.1",
-        "PORT": int(os.getenv("MYSQL_PORT", 3306)),
-        "OPTIONS": {
-            "init_command": "SET sql_mode='STRICT_TRANS_TABLES'",
-        },
-    }
-}
+# DATABASES = {
+#     "default": {
+#         "ENGINE": "django.db.backends.mysql",
+#         "NAME": os.getenv("MYSQL_DATABASE", "saas_db"),
+#         "USER": os.getenv("MYSQL_USER", "root"),
+#         "PASSWORD": os.getenv("MYSQL_PASSWORD", ""),
+#         "HOST": "db" if IS_DOCKER else "127.0.0.1",
+#         "PORT": int(os.getenv("MYSQL_PORT", 3306)),
+#         "OPTIONS": {
+#             "init_command": "SET sql_mode='STRICT_TRANS_TABLES'",
+#         },
+#     }
+# }
 
-AUTH_USER_MODEL = "api.User"
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': 'saas',
+        'USER' : 'root',
+        'PASSWORD' : 'Monday1@',
+        'HOST' : 'localhost',
+        'PORT' : '3306',
+    }
+
+}
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.mysql',
+#         'NAME': 'saas',
+#         'USER': 'root',
+#         'PASSWORD': '',   # <-- currently empty or missing
+#         'HOST': 'localhost',
+#         'PORT': '3306',
+#     }
+# }
+
+
+AUTH_USER_MODEL = "users.User"
 
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
@@ -164,7 +188,7 @@ EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 EMAIL_HOST_USER = "hifzan56@gmail.com"
 EMAIL_HOST_PASSWORD = "zfso nnwd cbqs hnil"
-DEFAULT_FROM_EMAIL = "Fees Management <hifzan56@gmail.com>"
+DEFAULT_FROM_EMAIL = "root <hifzan56@gmail.com>"
 
 DEFAULT_DOMAIN = "127.0.0.1:8000"
 
@@ -176,13 +200,13 @@ CELERY_RESULT_SERIALIZER = "json"
 CELERY_TIMEZONE = "Asia/Kolkata"
 
 
-CELERY_BEAT_SCHEDULE = {
-    "send-due-reminders-everyday": {
-        "task": "api.tasks.send_unpaid_invoice_reminders",
-        "schedule": crontab(hour=8, minute=0),  # daily at 08:00
-        "args": (7,), 
-    },
-}
+# CELERY_BEAT_SCHEDULE = {
+#     "send-due-reminders-everyday": {
+#         "task": "api.tasks.send_unpaid_invoice_reminders",
+#         "schedule": crontab(hour=8, minute=0),  # daily at 08:00
+#         "args": (7,), 
+#     },
+# }
 
 
 # Password validation
