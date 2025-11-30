@@ -36,10 +36,9 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 # Application definition
 
-INSTALLED_APPS = [
-    
-    
+INSTALLED_APPS = [  
     "daphne",
+    "django_extensions",
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -47,11 +46,8 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
-<<<<<<< HEAD
-=======
     'apps.users',
     'apps.tenants',
->>>>>>> de171bf7cc90ce500fa57154f2029168e073308b
     "rest_framework_simplejwt.token_blacklist",
     "channels",
     'drf_yasg',
@@ -113,7 +109,6 @@ IS_DOCKER = os.getenv("DJANGO_ENV") == "docker"
 #         },
 #     }
 # }
-<<<<<<< HEAD
 
 DATABASES = {
     'default': {
@@ -126,30 +121,7 @@ DATABASES = {
     }
 
 }
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'django.db.backends.mysql',
-#         'NAME': 'saas',
-#         'USER': 'root',
-#         'PASSWORD': '',   # <-- currently empty or missing
-#         'HOST': 'localhost',
-#         'PORT': '3306',
-#     }
-# }
 
-=======
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.mysql",
-        "NAME": "saas",
-        "USER": "root",
-        "PASSWORD": "",   # same as above
-        "HOST": "localhost",
-        "PORT": "3306",
-    }
-}
-
->>>>>>> de171bf7cc90ce500fa57154f2029168e073308b
 
 AUTH_USER_MODEL = "users.User"
 
@@ -207,11 +179,7 @@ EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 EMAIL_HOST_USER = "hifzan56@gmail.com"
 EMAIL_HOST_PASSWORD = "zfso nnwd cbqs hnil"
-<<<<<<< HEAD
 DEFAULT_FROM_EMAIL = "root <hifzan56@gmail.com>"
-=======
-DEFAULT_FROM_EMAIL = "SAAS <hifzan56@gmail.com>"
->>>>>>> de171bf7cc90ce500fa57154f2029168e073308b
 
 DEFAULT_DOMAIN = "127.0.0.1:8000"
 
