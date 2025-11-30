@@ -18,10 +18,10 @@ schema_view = get_schema_view(
 
 urlpatterns = [
     # ... your existing url patterns
-    path('api/auth/', include('apps.users.urls')),
-
-    # Swagger / Redoc
+    path('users', include('apps.users.urls')),
+    path('tenants', include('apps.tenants.urls')),
+      # Swagger / Redoc
     path('api/docs/swagger.json', schema_view.without_ui(cache_timeout=0), name='schema-json'),
-    path('api/docs/swagger/', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
+    path('swagger', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
     path('api/docs/redoc/', schema_view.with_ui('redoc', cache_timeout=0), name='schema-redoc'),
 ]

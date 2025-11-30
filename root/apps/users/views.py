@@ -12,7 +12,7 @@ from .serializers import (
     CustomTokenObtainPairSerializer,
 )
 from .permissions import IsAdminOrSelf
-from root.utils.custom_response import custom_response
+from root.utils import custom_response
 
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.tokens import RefreshToken
