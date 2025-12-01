@@ -51,8 +51,6 @@ INSTALLED_APPS = [
     "rest_framework_simplejwt.token_blacklist",
     "channels",
     'drf_yasg',
-    'apps.tenants',
-    'apps.users',
 ]
 
 MIDDLEWARE = [
