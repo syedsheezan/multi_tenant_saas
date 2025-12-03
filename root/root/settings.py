@@ -48,6 +48,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'apps.users',
     'apps.tenants',
+    'apps.project',
     "rest_framework_simplejwt.token_blacklist",
     "channels",
     'drf_yasg',
