@@ -20,6 +20,8 @@ urlpatterns = [
     # ... your existing url patterns
     path('users', include('apps.users.urls')),
     path('tenants', include('apps.tenants.urls')),
+    path('tasks', include('apps.tasks.urls')),
+    path('project', include('apps.project.urls')),
       # Swagger / Redoc
     path('api/docs/swagger.json', schema_view.without_ui(cache_timeout=0), name='schema-json'),
     path('swagger', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
