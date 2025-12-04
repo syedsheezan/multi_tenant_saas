@@ -50,6 +50,7 @@ INSTALLED_APPS = [
     'apps.tenants',
     'apps.project',
     'apps.tasks',
+    'apps.notifications',
     "rest_framework_simplejwt.token_blacklist",
     "channels",
     'drf_yasg',
