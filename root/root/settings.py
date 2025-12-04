@@ -36,10 +36,9 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 # Application definition
 
-INSTALLED_APPS = [
-    
-    
+INSTALLED_APPS = [  
     "daphne",
+    "django_extensions",
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -85,7 +84,7 @@ WSGI_APPLICATION = 'root.wsgi.application'
 ASGI_APPLICATION = 'root.asgi.application'
 
 
-APPEND_SLASH=False,
+APPEND_SLASH=False
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 from dotenv import load_dotenv
@@ -109,15 +108,17 @@ IS_DOCKER = os.getenv("DJANGO_ENV") == "docker"
 #         },
 #     }
 # }
+
 DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.mysql",
-        "NAME": "saas",
-        "USER": "root",
-        "PASSWORD": "",   # same as above
-        "HOST": "localhost",
-        "PORT": "3306",
+    'default': {
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': 'saas',
+        'USER' : 'root',
+        'PASSWORD' : 'Monday1@',
+        'HOST' : 'localhost',
+        'PORT' : '3306',
     }
+
 }
 
 
@@ -177,7 +178,7 @@ EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 EMAIL_HOST_USER = "hifzan56@gmail.com"
 EMAIL_HOST_PASSWORD = "zfso nnwd cbqs hnil"
-DEFAULT_FROM_EMAIL = "SAAS <hifzan56@gmail.com>"
+DEFAULT_FROM_EMAIL = "root <hifzan56@gmail.com>"
 
 DEFAULT_DOMAIN = "127.0.0.1:8000"
 
@@ -189,13 +190,13 @@ CELERY_RESULT_SERIALIZER = "json"
 CELERY_TIMEZONE = "Asia/Kolkata"
 
 
-CELERY_BEAT_SCHEDULE = {
-    "send-due-reminders-everyday": {
-        "task": "api.tasks.send_unpaid_invoice_reminders",
-        "schedule": crontab(hour=8, minute=0),  # daily at 08:00
-        "args": (7,), 
-    },
-}
+# CELERY_BEAT_SCHEDULE = {
+#     "send-due-reminders-everyday": {
+#         "task": "api.tasks.send_unpaid_invoice_reminders",
+#         "schedule": crontab(hour=8, minute=0),  # daily at 08:00
+#         "args": (7,), 
+#     },
+# }
 
 
 # Password validation
