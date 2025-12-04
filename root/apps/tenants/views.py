@@ -19,8 +19,8 @@ from django.contrib.auth.models import User
 
 
 class PlanListView(APIView):
-    # permission_classes = [permissions.IsAuthenticated]
-    permission_classes = []
+    permission_classes = [permissions.IsAuthenticated]
+    # permission_classes = []
 
     @swagger_auto_schema(
         operation_summary="Get Subscription Plans",
@@ -38,8 +38,8 @@ class PlanListView(APIView):
 
 
 class OrganizationListCreateView(APIView):
-    # permission_classes = [permissions.IsAuthenticated]
-    permission_classes = []
+    permission_classes = [permissions.IsAuthenticated]
+    # permission_classes = []
 
     @swagger_auto_schema(
         operation_summary="List My Organizations",
@@ -82,8 +82,8 @@ class OrganizationListCreateView(APIView):
 
 
 class OrganizationDetailView(APIView):
-    # permission_classes = [permissions.IsAuthenticated, IsTenantProvided]
-    permission_classes = []
+    permission_classes = [permissions.IsAuthenticated, IsTenantProvided]
+    # permission_classes = []
 
     # ---------------------- GET ----------------------
     @swagger_auto_schema(
@@ -164,8 +164,8 @@ class OrganizationDetailView(APIView):
 
 
 class OrganizationInviteView(APIView):
-    # permission_classes = [permissions.IsAuthenticated, IsOrgOwnerOrAdmin]
-    permission_classes = []
+    permission_classes = [permissions.IsAuthenticated, IsOrgOwnerOrAdmin]
+    # permission_classes = []
 
     @swagger_auto_schema(
         operation_summary="Invite User to Organization",
@@ -211,8 +211,8 @@ class OrganizationInviteView(APIView):
 
 
 class MembershipListView(APIView):
-    # permission_classes = [permissions.IsAuthenticated, IsTenantProvided]
-    permission_classes = []
+    permission_classes = [permissions.IsAuthenticated, IsTenantProvided]
+    # permission_classes = []
 
     @swagger_auto_schema(
         operation_summary="List Members of an Organization",
