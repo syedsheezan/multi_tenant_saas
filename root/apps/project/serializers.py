@@ -1,5 +1,10 @@
-from rest_framework import serializers,settings
+from rest_framework import serializers
+from django.conf import settings
 from .models import Project, ProjectMembership
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
+
 
 class ProjectSerializer(serializers.ModelSerializer):
     owner = serializers.PrimaryKeyRelatedField(read_only=True)
@@ -18,9 +23,10 @@ class ProjectSerializer(serializers.ModelSerializer):
         return super().create(validated_data)
 
 class ProjectMembershipSerializer(serializers.ModelSerializer):
-    user = serializers.PrimaryKeyRelatedField(queryset=settings.AUTH_USER_MODEL.objects.all())
+    user = serializers.PrimaryKeyRelatedField(queryset=User.objects.all())
 
     class Meta:
         model = ProjectMembership
         fields = ['id','project','user','role','joined_at']
         read_only_fields = ['id','joined_at']
+
