@@ -4,7 +4,7 @@ from .models import Project
 from .serializers import ProjectSerializer
 from .permissions import IsProjectOwnerOrReadOnly
 
-from root.apps.project import models
+from . import models
 
 class ProjectViewSet(viewsets.ModelViewSet):
     serializer_class = ProjectSerializer
