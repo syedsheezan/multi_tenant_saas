@@ -13,7 +13,7 @@ class ProjectViewSet(viewsets.ModelViewSet):
     search_fields = ['name','description','slug']
 
     def get_queryset(self):
-        tenant = getattr(self.request, 'tenant', None)
+        tenant = getattr(self.request, 'tenant', None) #tenant
         if tenant is None:
             return Project.objects.none()
         qs = Project.objects.filter(tenant=tenant, archived=False)
