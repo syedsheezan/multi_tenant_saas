@@ -18,6 +18,9 @@ schema_view = get_schema_view(
 
 urlpatterns = [
     # ... your existing url patterns
+
+    path('admin/', admin.site.urls),
+    
     path('users', include('apps.users.urls')),
     path('tenants', include('apps.tenants.urls')),
     path('tasks', include('apps.tasks.urls')),
