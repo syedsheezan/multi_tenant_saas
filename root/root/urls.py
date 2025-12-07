@@ -1,4 +1,5 @@
 # core/urls.py (top)
+from django.contrib import admin
 from django.urls import path, include
 from rest_framework import permissions
 from drf_yasg.views import get_schema_view
@@ -20,7 +21,7 @@ urlpatterns = [
     # ... your existing url patterns
 
     path('admin/', admin.site.urls),
-    
+
     path('users', include('apps.users.urls')),
     path('tenants', include('apps.tenants.urls')),
     path('tasks', include('apps.tasks.urls')),
