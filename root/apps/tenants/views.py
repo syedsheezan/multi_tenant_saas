@@ -164,7 +164,7 @@ class OrganizationDetailView(APIView):
 
 
 class OrganizationInviteView(APIView):
-    permission_classes = [permissions.IsAuthenticated, IsOrgOwnerOrAdmin]
+    permission_classes = [permissions.IsAuthenticated,IsTenantProvided, IsOrgOwnerOrAdmin]
     # permission_classes = []
 
     @swagger_auto_schema(
