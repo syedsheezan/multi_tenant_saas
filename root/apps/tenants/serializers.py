@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from .models import Organization, OrganizationMembership, Plan
 
+
 class PlanSerializer(serializers.ModelSerializer):
     class Meta:
         model = Plan

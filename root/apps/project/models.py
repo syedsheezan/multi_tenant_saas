@@ -1,11 +1,10 @@
 from django.db import models
 from django.conf import settings
-from apps.tenants.models import Organization
 
 class Project(models.Model):
     tenant = models.ForeignKey('tenants.Organization', on_delete=models.CASCADE, related_name='projects')
     name = models.CharField(max_length=255)
-    slug = models.SlugField(max_length=255, unique=False)  # you may enforce unique per tenant
+    slug = models.SlugField(max_length=255, unique=False)
     description = models.TextField(blank=True)
     owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='owned_projects')
     is_public = models.BooleanField(default=False)
@@ -22,7 +21,7 @@ class Project(models.Model):
 
 class ProjectMembership(models.Model):
     ROLE_CHOICES = (('owner','Owner'),('member','Member'),('viewer','Viewer'))
-    project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name='memberships')
+    project = models.ForeignKey('project.Project', on_delete=models.CASCADE, related_name='memberships')
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='project_memberships')
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='member')
     joined_at = models.DateTimeField(auto_now_add=True)

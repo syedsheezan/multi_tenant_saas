@@ -1,26 +1,47 @@
-from rest_framework import serializers,settings
+from rest_framework import serializers
 from .models import Project, ProjectMembership
+from apps.tenants.models import Organization
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
+
 
 class ProjectSerializer(serializers.ModelSerializer):
+    # tenant comes from request body (UUID)
+    tenant = serializers.PrimaryKeyRelatedField(
+        queryset=Organization.objects.all(),
+        write_only=True,
+        required=False
+    )
+
     owner = serializers.PrimaryKeyRelatedField(read_only=True)
-    tenant = serializers.PrimaryKeyRelatedField(read_only=True)
 
     class Meta:
         model = Project
-        fields = ['id','tenant','name','slug','description','owner','is_public','archived','created_at','updated_at']
-        read_only_fields = ['id','tenant','owner','created_at','updated_at']
+        fields = [
+            "id",
+            "tenant",
+            "name",
+            "slug",
+            "description",
+            "owner",
+            "is_public",
+            "archived",
+            "created_at",
+            "updated_at",
+        ]
+        read_only_fields = ["id", "owner", "created_at", "updated_at"]
 
-    def create(self, validated_data):
-        request = self.context['request']
-        # tenant should be injected by middleware or view
-        validated_data['owner'] = request.user
-        validated_data['tenant'] = request.tenant
-        return super().create(validated_data)
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        data["tenant"] = str(instance.tenant_id)
+        return data
+
 
 class ProjectMembershipSerializer(serializers.ModelSerializer):
-    user = serializers.PrimaryKeyRelatedField(queryset=settings.AUTH_USER_MODEL.objects.all())
+    user = serializers.PrimaryKeyRelatedField(queryset=User.objects.all())
 
     class Meta:
         model = ProjectMembership
-        fields = ['id','project','user','role','joined_at']
-        read_only_fields = ['id','joined_at']
+        fields = ["id", "user", "role", "joined_at"]
+        read_only_fields = ["id", "joined_at"]

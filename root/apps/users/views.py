@@ -4,6 +4,10 @@ from rest_framework.views import APIView
 from rest_framework.response import Response  # only used by drf-yasg examples, logic uses custom_response
 from django.contrib.auth import get_user_model
 from django.shortcuts import get_object_or_404
+from .models import *
+from apps.tenants.models import OrganizationInvitation, OrganizationMembership  # if you want to auto-join on activation
+
+
 
 from .serializers import (
     RegisterSerializer,
@@ -299,3 +303,70 @@ class SwitchOrgAPIView(APIView):
             "org_id": org_id,
             "role": membership.role,
         }, status_code=status.HTTP_200_OK, request=request)
+
+class ActivateAccountView(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, request):
+        token = request.data.get("token")
+        if not token:
+            return Response({"token": ["This field is required."]}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            act = Activation.objects.select_related("user").get(token=token, used=False)
+        except Activation.DoesNotExist:
+            return Response({"detail": "Invalid or used token."}, status=status.HTTP_400_BAD_REQUEST)
+
+        if act.is_expired():
+            return Response({"detail": "Token expired."}, status=status.HTTP_400_BAD_REQUEST)
+
+        user = act.user
+        user.is_active = True
+        user.save(update_fields=["is_active"])
+
+        # mark activation used
+        act.mark_used()
+
+        # OPTIONAL: if there is a pending OrganizationInvitation by email, accept it
+        try:
+            invitation = OrganizationInvitation.objects.filter(email__iexact=user.email, accepted=False).first()
+            if invitation:
+                # create membership
+                OrganizationMembership.objects.get_or_create(
+                    user=user,
+                    organization=invitation.organization,
+                    defaults={"role": invitation.role, "is_active": True}
+                )
+                invitation.accepted = True
+                invitation.invited_user = user
+                invitation.save(update_fields=["accepted", "invited_user"])
+        except Exception:
+            # swallow; do not block activation on invitation logic
+            pass
+
+        return Response({"detail": "Account activated."}, status=status.HTTP_200_OK)
+
+
+class ResendActivationView(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, request):
+        email = request.data.get("email")
+        if not email:
+            return Response({"email": ["This field is required."]}, status=status.HTTP_400_BAD_REQUEST)
+
+        # find latest unused activation for that email
+        acts = Activation.objects.filter(user__email__iexact=email, used=False).order_by("-created_at")
+        if not acts.exists():
+            return Response({"detail": "No pending activation found for that email."}, status=status.HTTP_404_NOT_FOUND)
+
+        act = acts.first()
+        # optional: refresh expiry or create new token
+        # act.expires_at = timezone.now() + timedelta(hours=getattr(settings, "ACTIVATION_TOKEN_HOURS", 72))
+        # act.save(update_fields=["expires_at"])
+        # resend email
+        request_serializer = getattr(request, "serializer_context", None)
+        # Use same send function from register serializer through a simple send
+        from apps.users.serializers import RegisterSerializer
+        RegisterSerializer().send_activation_email(act.user, act.token, request)
+        return Response({"detail": "Activation email resent."}, status=status.HTTP_200_OK)

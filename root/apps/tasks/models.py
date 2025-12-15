@@ -33,8 +33,8 @@ class Task(models.Model):
     ]
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name="tasks")
-    organization = models.ForeignKey(Organization, on_delete=models.CASCADE)
+    project = models.ForeignKey('project.Project', on_delete=models.CASCADE, related_name="tasks")
+    organization = models.ForeignKey('tenants.Organization', on_delete=models.CASCADE)
 
     title = models.CharField(max_length=255)
     description = models.TextField(blank=True)
@@ -67,3 +67,17 @@ class Task(models.Model):
 
     def __str__(self):
         return self.title
+
+class TaskComment(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    task = models.ForeignKey('project.Project', on_delete=models.CASCADE, related_name='comments')
+    author = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name='task_comments')
+    body = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    edited_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ['created_at']
+
+    def __str__(self):
+        return f"Comment by {self.author} on {self.task}"
