@@ -1,8 +1,10 @@
 from django.db import models
 from django.conf import settings
 from apps.tenants.models import Organization
+import uuid
 
 class Project(models.Model):
+    id = models.UUIDField(primary_key=True,default=uuid.uuid4,editable=False)
     tenant = models.ForeignKey('tenants.Organization', on_delete=models.CASCADE, related_name='projects')
     name = models.CharField(max_length=255)
     slug = models.SlugField(max_length=255, unique=False)  # you may enforce unique per tenant
@@ -12,6 +14,7 @@ class Project(models.Model):
     archived = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    assigned_to = models.ForeignKey(settings.AUTH_USER_MODEL,on_delete=models.SET_NULL,null=True, blank=True,related_name="assigned_projects")
 
     class Meta:
         unique_together = (('tenant','slug'),)

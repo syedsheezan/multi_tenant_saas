@@ -3,7 +3,7 @@ import os
 from celery import Celery
 
 # Set Django default settings
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", "root.settings.dev")
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "root.settings")
 
 app = Celery("root")
 

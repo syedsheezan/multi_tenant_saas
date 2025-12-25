@@ -51,6 +51,8 @@ INSTALLED_APPS = [
     'apps.project',
     'apps.tasks',
     'apps.notifications',
+    'apps.audit',
+    "apps.files",
     "rest_framework_simplejwt.token_blacklist",
     "channels",
     'drf_yasg',
@@ -152,20 +154,45 @@ CHANNEL_LAYERS = {
     },
 }
 
-SWAGGER_SETTINGS = {
-   'SECURITY_DEFINITIONS': {
-      'Basic': {
-            'type': 'basic'
-      },
-      'Bearer': {
-            'type': 'apiKey',
-            'name': 'Authorization',
-            'in': 'header'
-      }
-   },
-       "USE_SESSION_AUTH": False,  
+# SWAGGER_SETTINGS = {
+#    'SECURITY_DEFINITIONS': {
+#       'Basic': {
+#             'type': 'basic'
+#       },
+#       'Bearer': {
+#             'type': 'apiKey',
+#             'name': 'Authorization',
+#             'in': 'header'
+#       }
+#    },
+#        "USE_SESSION_AUTH": False,  
 
+# }
+
+SWAGGER_SETTINGS = {
+    "USE_SESSION_AUTH": False,
+
+    "SECURITY_DEFINITIONS": {
+        "Basic": {
+            "type": "basic",
+        },
+
+        "Bearer": {
+            "type": "apiKey",
+            "name": "Authorization",
+            "in": "header",
+            "description": "JWT Authorization header. Example: Bearer <access_token>",
+        },
+
+        "Organization": {                     # ✅ ADDED
+            "type": "apiKey",                  # ✅
+            "name": "X-ORGANIZATION-ID",        # ✅
+            "in": "header",                    # ✅
+            "description": "Organization (Tenant) UUID",  # ✅
+        },
+    },
 }
+
 
 SPECTACULAR_SETTINGS = {
     'TITLE': 'My API',
@@ -180,7 +207,7 @@ EMAIL_HOST = "smtp.gmail.com"
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 EMAIL_HOST_USER = "umairkhn76@gmail.com"
-EMAIL_HOST_PASSWORD = "zfso nnwd cbqs hnil"
+EMAIL_HOST_PASSWORD = "cnykdnjjalqpisgr"
 DEFAULT_FROM_EMAIL = "root <umairkhn76@gmail.com>"
 
 DEFAULT_DOMAIN = "127.0.0.1:8000"

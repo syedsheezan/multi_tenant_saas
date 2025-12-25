@@ -25,7 +25,7 @@ class TaskListCreateView(APIView):
     def get(self, request, project_id=None):
         org = request.organization
         tasks = Task.objects.filter(project_id=project_id, organization=org, is_archived=False)
-        return success_response(TaskSerializer(tasks, many=True).data, "Tasks fetched", request)
+        return success_response(TaskSerializer(tasks, many=True).data, "Tasks fetched", status_code=status.HTTP_200_OK,request=request) #status.HTTP_200_OK
 
     @swagger_auto_schema(
         operation_summary="Create new task",
@@ -39,11 +39,11 @@ class TaskListCreateView(APIView):
 
         data = request.data.copy()
         data["project"] = project_id
-        data["organization"] = str(org.id)
+        # data["organization"] = str(org.id)
 
         serializer = TaskSerializer(data=data)
         if serializer.is_valid():
-            task = serializer.save(created_by=user)
+            task = serializer.save(created_by=user,organization=org)
             return success_response(TaskSerializer(task).data, "Task created", status.HTTP_201_CREATED, request)
 
         return error_response(serializer.errors, "Validation failed", status.HTTP_400_BAD_REQUEST, request)

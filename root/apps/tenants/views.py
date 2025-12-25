@@ -17,7 +17,6 @@ from drf_yasg import openapi
 from .response import success_response, error_response
 from django.contrib.auth.models import User
 
-
 class PlanListView(APIView):
     permission_classes = [permissions.IsAuthenticated]
     # permission_classes = []
@@ -82,7 +81,7 @@ class OrganizationListCreateView(APIView):
 
 
 class OrganizationDetailView(APIView):
-    permission_classes = [permissions.IsAuthenticated, IsTenantProvided]
+    permission_classes = [permissions.IsAuthenticated, IsOrgOwnerOrAdmin]
     # permission_classes = []
 
     # ---------------------- GET ----------------------
@@ -163,51 +162,228 @@ class OrganizationDetailView(APIView):
             return error_response(str(e), "Delete failed", status.HTTP_500_INTERNAL_SERVER_ERROR, request)
 
 
+# class OrganizationInviteView(APIView):
+#     permission_classes = [permissions.IsAuthenticated,IsTenantProvided, IsOrgOwnerOrAdmin]
+#     # permission_classes = []
+
+#     @swagger_auto_schema(
+#         operation_summary="Invite User to Organization",
+#         tags=["Organizations"],
+#         request_body=openapi.Schema(
+#             type=openapi.TYPE_OBJECT,
+#             required=["user_uuid"],
+#             properties={
+#                 "user_uuid": openapi.Schema(type=openapi.TYPE_STRING),
+#                 "role": openapi.Schema(type=openapi.TYPE_STRING, default="member"),
+#             }
+#         ),
+#         responses={201: OrganizationMembershipSerializer}
+#     )
+
+#     def post(self, request, org_id):
+#         try:
+#             org = get_object_or_404(Organization, pk=org_id)
+#             # user_id = request.data.get("user_id")
+#             user_uuid = request.data.get("user_uuid")
+#             role = request.data.get("role", OrganizationMembership.ROLE_MEMBER)
+
+#             from django.contrib.auth import get_user_model
+#             User = get_user_model()
+
+#             try:
+#                 user = User.objects.get(id=user_uuid) # yaha id
+#             except User.DoesNotExist:
+#                 return error_response("User not found", status_code=status.HTTP_404_NOT_FOUND, request=request)
+            
+#             membership, created = OrganizationMembership.objects.get_or_create(
+#                 user=user, organization=org, defaults={"role": role}
+#             )
+
+#             serializer = OrganizationMembershipSerializer(membership)
+#             return success_response(serializer.data,
+#                                     "User invited successfully" if created else "User already a member",
+#                                     status.HTTP_201_CREATED,
+#                                     request=request)
+
+#         except Exception as e:
+#             return error_response(str(e), "Failed to invite user", status.HTTP_500_INTERNAL_SERVER_ERROR, request)
+
 class OrganizationInviteView(APIView):
-    permission_classes = [permissions.IsAuthenticated,IsTenantProvided, IsOrgOwnerOrAdmin]
-    # permission_classes = []
+    permission_classes = [permissions.IsAuthenticated, IsTenantProvided, IsOrgOwnerOrAdmin]
 
     @swagger_auto_schema(
         operation_summary="Invite User to Organization",
         tags=["Organizations"],
         request_body=openapi.Schema(
             type=openapi.TYPE_OBJECT,
-            required=["user_id"],
+            required=["user_uuid"],
             properties={
-                "user_id": openapi.Schema(type=openapi.TYPE_STRING),
+                "user_uuid": openapi.Schema(type=openapi.TYPE_STRING),
                 "role": openapi.Schema(type=openapi.TYPE_STRING, default="member"),
             }
-        ),
-        responses={201: OrganizationMembershipSerializer}
+        )
     )
-
     def post(self, request, org_id):
         try:
             org = get_object_or_404(Organization, pk=org_id)
-            # user_id = request.data.get("user_id")
+
             user_uuid = request.data.get("user_uuid")
-            role = request.data.get("role", OrganizationMembership.ROLE_MEMBER)
 
             from django.contrib.auth import get_user_model
             User = get_user_model()
 
-            try:
-                user = User.objects.get(id=user_uuid) # yaha id
-            except User.DoesNotExist:
-                return error_response("User not found", status_code=status.HTTP_404_NOT_FOUND, request=request)
+            user = get_object_or_404(User, id=user_uuid)
 
-            membership, created = OrganizationMembership.objects.get_or_create(
-                user=user, organization=org, defaults={"role": role}
+            # ================= FIX =================
+            # ❌ NO OrganizationMembership here
+            # ✅ Only create Invitation
+            from apps.tenants.models import Invitation
+
+            # Invitation.objects.create(
+            invitation = Invitation.objects.create(
+                email=user.email,
+                invited_user=user, 
+                organization=org,
+                invited_by=request.user,
+                role=request.data.get("role", "member")
+            )
+            # =======================================
+
+            from apps.audit.services import log_audit
+            log_audit(
+                organization=org,
+                actor=request.user,
+                action="invite_sent",
+                object_type="Invitation",
+                object_id=invitation.id,
+                message=f"Invited {user.email} to organization",
+                metadata={"email": user.email}
             )
 
-            serializer = OrganizationMembershipSerializer(membership)
-            return success_response(serializer.data,
-                                    "User invited successfully" if created else "User already a member",
-                                    status.HTTP_201_CREATED,
-                                    request=request)
+            return success_response(
+                {},
+                "Invitation sent successfully",
+                status.HTTP_201_CREATED,
+                request=request
+            )
 
         except Exception as e:
             return error_response(str(e), "Failed to invite user", status.HTTP_500_INTERNAL_SERVER_ERROR, request)
+
+
+class InvitationListView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    @swagger_auto_schema(
+        operation_summary="List My Pending Invitations",
+        tags=["Invitations"],
+        responses={200: "List of invitations"}
+    )
+    def get(self, request):
+        from apps.tenants.models import Invitation
+        from apps.audit.services import log_audit
+
+        invitations = Invitation.objects.filter(
+            email=request.user.email,
+            accepted=False
+        )
+
+        data = [
+            {
+                "invite_id": str(inv.id),  # 🔥 THIS IS IMPORTANT
+                "organization": inv.organization.name,
+                "organization_id": str(inv.organization.id),
+                "invited_by": inv.invited_by.email if inv.invited_by else None,
+                "created_at": inv.created_at,
+            }
+            for inv in invitations
+        ]
+
+        return success_response(
+            data,
+            "Pending invitations fetched",
+            request=request
+        )
+    
+class AcceptInvitationView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    @swagger_auto_schema(
+        operation_summary="Accept Organization Invitation",
+        tags=["Invitations"]
+    )
+    def post(self, request, invite_id):
+        from apps.tenants.models import Invitation, OrganizationMembership
+        from apps.audit.services import log_audit 
+
+        invitation = get_object_or_404(
+            Invitation,
+            id=invite_id,
+            email=request.user.email,
+            accepted=False
+        )
+
+        # Create membership
+        OrganizationMembership.objects.create(
+            user=request.user,
+            organization=invitation.organization,
+            # role=OrganizationMembership.ROLE_MEMBER
+            role=invitation.role
+        )
+
+        # Mark invitation accepted
+        invitation.accepted = True
+        invitation.save()
+
+        log_audit(
+            organization=invitation.organization,
+            actor=request.user,
+            action="invite_accepted",
+            object_type="Invitation",
+            object_id=invitation.id,
+            message=f"{request.user.email} accepted invitation"
+        )
+
+
+        return success_response(
+            {},
+            "Invitation accepted successfully",
+            status.HTTP_200_OK,
+            request
+        )
+
+class RejectInvitationView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, invite_id):
+        from apps.tenants.models import Invitation
+        from apps.audit.services import log_audit
+
+        invitation = get_object_or_404(
+            Invitation,
+            id=invite_id,
+            email=request.user.email,
+            accepted=False
+        )
+
+        log_audit(
+            organization=invitation.organization,
+            actor=request.user,
+            action="invite_rejected",
+            object_type="Invitation",
+            object_id=invitation.id,
+            message=f"{request.user.email} rejected invitation"
+        )
+
+        invitation.delete()
+
+        return success_response(
+            {},
+            "Invitation rejected",
+            status.HTTP_200_OK,
+            request
+        )
+
 
 
 class MembershipListView(APIView):
@@ -237,3 +413,44 @@ class MembershipListView(APIView):
             return success_response(serializer.data, "Members fetched successfully", request=request)
         except Exception as e:
             return error_response(str(e), "Failed to fetch members", status.HTTP_500_INTERNAL_SERVER_ERROR, request)
+
+class OrganizationMemberRemoveView(APIView):
+    permission_classes = [
+        permissions.IsAuthenticated,
+        IsTenantProvided,
+        IsOrgOwnerOrAdmin
+    ]
+
+    def delete(self, request, membership_id):
+        try:
+            membership = get_object_or_404(
+                OrganizationMembership,
+                id=membership_id,
+                organization=request.organization,
+                is_active=True
+            )
+
+            # ❌ Owner ko remove nahi kar sakte
+            if membership.role == OrganizationMembership.ROLE_OWNER:
+                return error_response(
+                    "Owner cannot be removed",
+                    status.HTTP_400_BAD_REQUEST,
+                    request
+                )
+
+            membership.is_active = False
+            membership.save()
+
+            return success_response(
+                {},
+                "Member removed successfully",
+                request=request
+            )
+
+        except Exception as e:
+            return error_response(
+                str(e),
+                "Failed to remove member",
+                status.HTTP_500_INTERNAL_SERVER_ERROR,
+                request
+            )
