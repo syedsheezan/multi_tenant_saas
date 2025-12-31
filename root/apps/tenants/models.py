@@ -1,17 +1,18 @@
-from django.db import models
-
-# Create your models here.
+# apps/tenants/models.py
+import uuid
 from django.db import models
 from django.conf import settings
-import uuid
+def generate_invite_token():
+    # token_urlsafe returns a URL-safe text string; limit length by slicing if needed
+    return secrets.token_urlsafe(32)
 
 class Plan(models.Model):
     """
-    Optional: subscription plans (free, pro, etc.)
+    Subscription plans (Free / Pro / Enterprise).
     """
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=100, unique=True)
-    max_users = models.IntegerField(default=5)
+    max_users = models.PositiveIntegerField(default=5)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
@@ -30,6 +31,9 @@ class Organization(models.Model):
 
     class Meta:
         ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['slug']),
+        ]
 
     def __str__(self):
         return self.name
@@ -53,7 +57,42 @@ class OrganizationMembership(models.Model):
     is_active = models.BooleanField(default=True)
 
     class Meta:
-        unique_together = ('user', 'organization')
+        # prefer UniqueConstraint with name for clarity and future migrations
+        constraints = [
+            models.UniqueConstraint(fields=('user', 'organization'), name='unique_membership_per_org')
+        ]
+        indexes = [
+            models.Index(fields=['organization', 'user']),
+        ]
 
     def __str__(self):
         return f"{self.user} @ {self.organization} ({self.role})"
+    
+# paste at the end of apps/tenants/models.py
+
+import secrets
+from django.utils import timezone
+
+class OrganizationInvitation(models.Model):
+    """
+    Invitation to join an organization. Token is one-time use and may expire.
+    """
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    organization = models.ForeignKey(Organization, on_delete=models.CASCADE, related_name='invitations')
+    inviter = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True)
+    invited_user = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, related_name='invitations_received', on_delete=models.SET_NULL)
+    email = models.EmailField(null=True, blank=True)
+    role = models.CharField(max_length=20, default=OrganizationMembership.ROLE_MEMBER)
+    token = models.CharField(max_length=64, unique=True, db_index=True, default=lambda: secrets.token_urlsafe(32))
+    created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField(null=True, blank=True)
+    accepted = models.BooleanField(default=False)
+    token = models.CharField(max_length=64, unique=True, db_index=True, default=generate_invite_token)
+
+
+    def is_expired(self):
+        return self.expires_at is not None and timezone.now() > self.expires_at
+
+    def __str__(self):
+        return f"Invite {self.email or self.invited_user} -> {self.organization}"
+

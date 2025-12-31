@@ -21,6 +21,9 @@ urlpatterns = [
     path('users', include('apps.users.urls')),
     path('tenants', include('apps.tenants.urls')),
     path('project', include('apps.project.urls')),
+    path('tasks', include('apps.tasks.urls')),
+    path('webhooks', include('apps.webhooks.urls')),
+
 
       # Swagger / Redoc
     path('api/docs/swagger.json', schema_view.without_ui(cache_timeout=0), name='schema-json'),

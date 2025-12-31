@@ -1,17 +1,18 @@
+# apps/users/serializers.py
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
-from django.utils.crypto import get_random_string
+import logging
 
 User = get_user_model()
+logger = logging.getLogger(__name__)
 
 
 class RegisterSerializer(serializers.ModelSerializer):
     """
-    Public registration serializer.
-    By default we create the user with is_active=False so email verification
-    can be required before allowing org actions. If you prefer instant activation,
-    remove the line that sets is_active=False in create().
+    Public registration serializer. Keeps user inactive by default (email
+    verification required). If you prefer instant activation, set is_active=True
+    in create() and remove the activation flow.
     """
     password = serializers.CharField(write_only=True, min_length=8)
 
@@ -20,16 +21,20 @@ class RegisterSerializer(serializers.ModelSerializer):
         fields = ("id", "username", "email", "password", "first_name", "last_name", "display_name")
         read_only_fields = ("id",)
 
+    def validate_password(self, value):
+        # optional: run Django password validators
+        from django.contrib.auth.password_validation import validate_password
+        validate_password(value, user=None)
+        return value
+
     def create(self, validated_data):
         password = validated_data.pop("password")
-        # create inactive user (require email verification). Change as needed.
         user = User(**validated_data)
         user.set_password(password)
-        user.is_active = False  # require email verification OR admin activation
+        user.is_active = False  # keep inactive until verification
         user.save()
-        # NOTE: send verification email here (implement send_verification_email)
-        # Example placeholder:
-        # send_verification_email(user, token=generate_token(user))
+        # NOTE: call activation/email sending logic here (e.g. create Activation and send mail)
+        # Example: ActivationService.create_activation_for(user, request=self.context.get("request"))
         return user
 
 
@@ -38,7 +43,7 @@ class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ("id", "username", "email", "first_name", "last_name", "display_name", "avatar")
-        read_only_fields = ("id", "username", "email")  # email/username read-only for profile updates
+        read_only_fields = ("id", "username", "email")
 
 
 class AdminUserSerializer(serializers.ModelSerializer):
@@ -51,35 +56,42 @@ class AdminUserSerializer(serializers.ModelSerializer):
 
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     """
-    Extends SimpleJWT TokenObtainPairSerializer to accept optional 'org_id'
-    and, if the user has a membership for that org, include `org_id` and `role`
-    in the returned token pair.
+    Extends SimpleJWT TokenObtainPairSerializer to optionally include org_id and role
+    into returned tokens if the user has a membership for that org.
+
+    NOTE:
+    - Expect org id as a string (UUID) in request.data['org_id'] or header 'X-ORGANIZATION-ID'.
+    - Do not cast org_id to int when using UUID PKs.
     """
     def validate(self, attrs):
         data = super().validate(attrs)
         request = self.context.get("request")
         org_id = None
         if request is not None:
-            org_id = request.data.get("org_id") or request.headers.get("X-Org-Id")
+            # canonical header name: X-ORGANIZATION-ID
+            org_id = request.data.get("org_id") or request.headers.get("X-ORGANIZATION-ID")
 
         if org_id:
             try:
                 # Lazy import to avoid circular import during startup
                 from apps.tenants.models import OrganizationMembership
-                membership = OrganizationMembership.objects.filter(user=self.user, organization_id=org_id).first()
+                # Use string comparison to support UUID PKs or integer PKs consistently
+                membership = OrganizationMembership.objects.filter(user=self.user, organization_id=str(org_id)).first()
                 if membership:
+                    # Create a fresh token with additional claims
                     from rest_framework_simplejwt.tokens import RefreshToken
                     refresh = RefreshToken.for_user(self.user)
                     access = refresh.access_token
-                    access["org_id"] = int(org_id)
+                    # keep IDs as strings (UUIDs) to avoid int() failures
+                    access["org_id"] = str(org_id)
                     access["role"] = membership.role
 
                     data["refresh"] = str(refresh)
                     data["access"] = str(access)
-                    data["org_id"] = int(org_id)
+                    data["org_id"] = str(org_id)
                     data["role"] = membership.role
-            except Exception:
-                # tenants may not exist yet in your environment; ignore gracefully
-                pass
+            except Exception as exc:
+                # log the exception; do not silently swallow in production
+                logger.exception("Error while adding org claim to token: %s", exc)
 
         return data
